@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>shugocam</title>
+</head><body>
+<h1>shugocam</h1>
+<canvas id=canvas></canvas>
+<video id=videoElement style="display:none"></video>
+<button id=btn>START</button><br>
+incam pos
+  <label><input type="radio" name="incampos" id="poslt" checked>↖</label>
+  <label><input type="radio" name="incampos" id="posrt">↗</label>
+  <label><input type="radio" name="incampos" id="poslb">↙</label>
+  <label><input type="radio" name="incampos" id="posrb">↘</label><br>
+incam size <input type="range" id=rangesize min="0.001" max="0.5" value="0.15" step="0.0001"><br>
+<button id=btndownload disabled>SAVE</button>
+<hr>
+<a href=https://github.com/code4fukui/shugocam/>src on GitHub</a>
+
+<script type="module">
+import { Camera } from "https://code4fukui.github.io/Camera/Camera.js";
+import { drawImageFit } from "./drawImageFit.js";
+
+const aspect = 3 / 4;
+const frontaspect = 4 / 3;
+
+const cw = canvas.width = 1920;
+const ch = canvas.height = cw * aspect;
+const g = canvas.getContext("2d");
+
+let bkimg = null;
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    // use videoElement as image
+    const vh = videoElement.videoHeight;
+    const vw = videoElement.videoWidth;
+    if (state == 1) {
+      drawImageFit(g, videoElement, vw, vh, 0, 0, cw, ch);
+    } else {
+      g.putImageData(bkimg, 0, 0);
+      const size = rangesize.value;
+      const gap = cw * size * .1;;
+      const dw = cw * size;
+      const dh = dw * frontaspect;
+      const x = poslt.checked || poslb.checked ? gap : cw - dw - gap;
+      const y = poslt.checked || posrt.checked ? gap : ch - dh - gap;
+      g.save();
+      g.beginPath();
+      g.ellipse(x + dw / 2, y + dh / 2, dw / 2, dh / 2, 0, 0, Math.PI * 2);
+      g.clip();
+      drawImageFit(g, videoElement, vw, vh, x, y, dw, dh);
+      g.restore();
+    }
+  },
+  width: 1920,
+  height: 1080,
+  backcamera: true,
+});
+
+const downloadJPEG = (canvas) => {
+  const dataURL = canvas.toDataURL("image/jpeg");
+  const link = document.createElement("a");
+  link.href = dataURL;
+  link.download = "image.jpg";
+  link.click();
+};
+
+let state = 0;
+btn.onclick = async () => {
+  if (state == 0) {
+    btn.textContent = "SHOT 1";
+    await camera.setBackCamera(true);
+    camera.start();
+    state++;
+  } else if (state == 1) {
+    btn.textContent = "SHOT 2";
+    bkimg = g.getImageData(0, 0, cw, ch);
+    await camera.setBackCamera(false);
+    state++;
+  } else if (state == 2) {
+    camera.stop();
+    btn.textContent = "START";
+    btndownload.disabled = false;
+    btndownload.onclick = () => {
+      downloadJPEG(canvas);
+    };
+    state = 0;
+  }
+};
+</script>
+
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+button {
+  margin: .5em;
+  padding: .5em 2em;
+  width: 10em;
+}
+canvas {
+  width: 100%;
+  border: 1px solid gray;
+}
+input[type=range] {
+  width: calc(100vw - 12em);
+}
+a {
+  color: gray;
+}
+</style>
