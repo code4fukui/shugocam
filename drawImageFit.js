@@ -6,7 +6,7 @@ export const drawImageFit = (g, img, sw, sh, dx, dy, dw, dh) => {
     const y = (sh - h) / 2;
     g.drawImage(img, 0, y, sw, h, dx, dy, dw, dh);
   } else {
-    const w = vh / aspect;
+    const w = sh / aspect;
     const x = (sw - w) / 2;
     g.drawImage(img, x, 0, w, sh, dx, dy, dw, dh);
   }
