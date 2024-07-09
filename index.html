@@ -35,7 +35,7 @@ const camera = new Camera(videoElement, {
     const vw = videoElement.videoWidth;
     if (state == 1) {
       drawImageFit(g, videoElement, vw, vh, 0, 0, cw, ch);
-    } else {
+    } else if (state == 2) {
       g.putImageData(bkimg, 0, 0);
       const size = rangesize.value;
       const gap = cw * size * .1;;
@@ -66,10 +66,12 @@ const downloadJPEG = (canvas) => {
 
 let state = 0;
 btn.onclick = async () => {
+  btn.disabled = true;
   if (state == 0) {
     btn.textContent = "SHOT 1";
-    await camera.setBackCamera(true);
-    camera.start();
+    bkimg = null;
+    camera.opt.backcamera = true; // await camera.setBackCamera(true);
+    await camera.start();
     state++;
   } else if (state == 1) {
     btn.textContent = "SHOT 2";
@@ -77,14 +79,15 @@ btn.onclick = async () => {
     await camera.setBackCamera(false);
     state++;
   } else if (state == 2) {
-    camera.stop();
     btn.textContent = "START";
     btndownload.disabled = false;
     btndownload.onclick = () => {
       downloadJPEG(canvas);
     };
+    await camera.stop();
     state = 0;
   }
+  btn.disabled = false;
 };
 </script>
 
